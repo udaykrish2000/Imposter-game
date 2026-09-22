@@ -104,10 +104,6 @@
   @keyframes flip { from { transform: rotateY(88deg); } to { transform: none; } }
   @media (prefers-reduced-motion: reduce) { .pcard.flip { animation: none; } .btn:active { transform: none; } }
 
-  .pcard .hint.imp {
-  font-weight: 800; padding: 10px 14px; border-radius: 14px;
-  background: rgba(29,26,58,.14); color: var(--card-ink);
-}
   /* discuss / vote / result */
   ol.order { list-style: none; margin: 0; padding: 0; display: grid; gap: 10px; }
   ol.order li { display: flex; align-items: center; gap: 12px; font-weight: 700; font-size: 1.15rem; }
@@ -190,7 +186,7 @@ const screens = {
   setup() {
     return `
       <div>
-        <h1 tabindex="-1">Find the Imposter</h1>
+        <h1 tabindex="-1"></h1>
         <p class="muted" style="margin-top:12px">One phone, passed around. Everyone gets a word, but one person's word is slightly different, and they don't know it. Find them.</p>
       </div>
       <div>
@@ -228,9 +224,7 @@ const screens = {
         <p class="muted">Pass the phone to <b style="color:var(--ink)">${esc(nm(i))}</b>. Nobody else looks.</p>
         <button class="pcard" ${pc(i)} data-a="reveal" aria-label="Show word for ${esc(nm(i))}">
           <span class="who">${esc(nm(i))}</span>
-          ${i === G.imposter
-  ? `<span class="hint imp">You're the odd one out. Blend in, don't get caught!</span>`
-  : `<span class="hint">Don't say it out loud.</span>`}
+          <span class="hint">Tap to see your word</span>
         </button>
         <div class="grow"></div>`;
     }
