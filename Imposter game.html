@@ -1,0 +1,345 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Odd Word Out</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400;12..96,600;12..96,800&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #F1EEFA;
+    --surface: #FFFFFF;
+    --ink: #1D1A3A;
+    --muted: #5E5A80;
+    --line: #D9D4EE;
+    --accent: #1D1A3A;
+    --on-accent: #FFFFFF;
+    --c1: #FF8A7A;
+    --c2: #FFC93C;
+    --c3: #5FD3A0;
+    --c4: #8FA8FF;
+    --c5: #E39DFF;
+    --c6: #FF9ECF;
+    --c7: #7ED9E0;
+    --c8: #C9D96B;
+    --card-ink: #1D1A3A;
+    box-sizing: border-box;
+    padding-top: env(safe-area-inset-top, 0px);
+    padding-bottom: env(safe-area-inset-bottom, 0px);
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --bg: #141227; --surface: #1F1C3A; --ink: #F2EFFF; --muted: #A9A5CC;
+      --line: #34305A; --accent: #F2EFFF; --on-accent: #141227;
+    }
+  }
+  :root[data-theme="dark"] {
+    --bg: #141227; --surface: #1F1C3A; --ink: #F2EFFF; --muted: #A9A5CC;
+    --line: #34305A; --accent: #F2EFFF; --on-accent: #141227;
+  }
+  html { height: 100%; scroll-padding-top: env(safe-area-inset-top, 0px); }
+  *, *::before, *::after { box-sizing: border-box; }
+  body {
+    height: 100%; margin: 0; background: var(--bg); color: var(--ink);
+    font-family: 'Bricolage Grotesque', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+    font-size: 17px; line-height: 1.45; -webkit-font-smoothing: antialiased;
+  }
+  #app {
+    min-height: 100%; max-width: 480px; margin: 0 auto; padding: 24px 20px 32px;
+    display: flex; flex-direction: column; gap: 20px;
+  }
+  h1, h2 { margin: 0; line-height: 1.05; letter-spacing: -0.02em; outline: none; }
+  h1 { font-size: clamp(2.4rem, 11vw, 3.2rem); font-weight: 800; }
+  h2 { font-size: clamp(1.8rem, 8vw, 2.4rem); font-weight: 800; }
+  p { margin: 0; }
+  .muted { color: var(--muted); }
+  .grow { flex: 1; }
+
+  .btn {
+    appearance: none; border: 0; width: 100%; padding: 17px 20px; border-radius: 16px;
+    font: inherit; font-weight: 800; font-size: 1.05rem; cursor: pointer;
+    background: var(--accent); color: var(--on-accent);
+  }
+  .btn.ghost { background: transparent; color: var(--ink); border: 2px solid var(--line); }
+  .btn:active { transform: scale(0.985); }
+  .btn:disabled { opacity: .4; cursor: not-allowed; }
+  :is(.btn, .chip, .pcard, .pick, input):focus-visible { outline: 3px solid var(--c4); outline-offset: 3px; }
+
+  /* setup */
+  .names { display: grid; gap: 10px; }
+  .name-row { display: flex; align-items: center; gap: 12px; }
+  .dot { width: 22px; height: 22px; border-radius: 50%; flex: none; background: var(--pc); }
+  input[type=text] {
+    flex: 1; min-width: 0; padding: 14px 16px; font: inherit; font-weight: 600;
+    color: var(--ink); background: var(--surface); border: 2px solid var(--line); border-radius: 14px;
+  }
+  input::placeholder { color: var(--muted); font-weight: 400; }
+  .chips { display: flex; flex-wrap: wrap; gap: 8px; }
+  .chip {
+    appearance: none; font: inherit; font-weight: 600; padding: 9px 16px; border-radius: 999px;
+    border: 2px solid var(--line); background: var(--surface); color: var(--ink); cursor: pointer;
+  }
+  .chip[aria-pressed="true"] { background: var(--accent); color: var(--on-accent); border-color: var(--accent); }
+  .label { font-weight: 800; margin-bottom: 8px; }
+
+  /* deal */
+  .progress { display: flex; gap: 8px; }
+  .progress span { flex: 1; height: 8px; border-radius: 4px; background: var(--line); }
+  .progress span.done { background: var(--ink); }
+  .pcard {
+    appearance: none; border: 0; width: 100%; text-align: left; font: inherit; cursor: pointer;
+    background: var(--pc); color: var(--card-ink); border-radius: 32px; padding: 28px 26px;
+    min-height: 320px; display: flex; flex-direction: column; justify-content: space-between;
+  }
+  div.pcard { cursor: default; }
+  .pcard .who { font-size: clamp(2.2rem, 11vw, 3rem); font-weight: 800; line-height: 1; letter-spacing: -0.02em; overflow-wrap: anywhere; }
+  .pcard .hint { font-weight: 600; font-size: 1.05rem; }
+  .pcard .word {
+    font-size: clamp(2.8rem, 15vw, 4.4rem); font-weight: 800; line-height: 1;
+    letter-spacing: -0.03em; overflow-wrap: anywhere;
+  }
+  .pcard.flip { animation: flip .32s ease-out; }
+  @keyframes flip { from { transform: rotateY(88deg); } to { transform: none; } }
+  @media (prefers-reduced-motion: reduce) { .pcard.flip { animation: none; } .btn:active { transform: none; } }
+
+  /* discuss / vote / result */
+  ol.order { list-style: none; margin: 0; padding: 0; display: grid; gap: 10px; }
+  ol.order li { display: flex; align-items: center; gap: 12px; font-weight: 700; font-size: 1.15rem; }
+  .rules { margin: 0; padding-left: 1.2em; display: grid; gap: 6px; }
+  .picks { display: grid; gap: 12px; }
+  .pick {
+    appearance: none; border: 0; font: inherit; font-weight: 800; font-size: 1.4rem; text-align: left;
+    padding: 22px 22px; border-radius: 22px; cursor: pointer; background: var(--pc); color: var(--card-ink);
+  }
+  .banner { padding: 22px; border-radius: 22px; background: var(--surface); border: 2px solid var(--line); }
+  .banner b { font-weight: 800; }
+  .reveal { display: grid; gap: 10px; }
+  .rrow {
+    display: flex; align-items: center; justify-content: space-between; gap: 12px;
+    padding: 14px 18px; border-radius: 18px; background: var(--pc); color: var(--card-ink); font-weight: 800;
+  }
+  .rrow .w { font-weight: 600; }
+  .rrow.odd { outline: 3px solid var(--ink); outline-offset: 2px; }
+  .tag { font-size: .8rem; font-weight: 800; padding: 3px 10px; border-radius: 999px; background: var(--card-ink); color: #fff; margin-left: 8px; white-space: nowrap; }
+  .stack { display: grid; gap: 10px; }
+</style>
+</head>
+<body>
+<main id="app" aria-live="polite"></main>
+
+<script>
+const PAIRS = {
+  Food: [
+    ["Coffee","Tea"],["Pizza","Burger"],["Dosa","Idli"],["Biryani","Fried rice"],["Mango","Papaya"],
+    ["Chocolate","Caramel"],["Butter","Cheese"],["Samosa","Pakora"],["Ice cream","Kulfi"],["Noodles","Pasta"]
+  ],
+  Animals: [
+    ["Cat","Tiger"],["Dog","Wolf"],["Crow","Eagle"],["Elephant","Rhino"],["Frog","Toad"],
+    ["Dolphin","Shark"],["Rabbit","Squirrel"],["Horse","Donkey"],["Bee","Wasp"],["Monkey","Gorilla"]
+  ],
+  Places: [
+    ["Beach","Lake"],["Temple","Church"],["Airport","Railway station"],["Library","Bookstore"],["Hospital","Clinic"],
+    ["Cinema","Theatre"],["Mall","Market"],["Hill","Mountain"],["School","College"],["Hotel","Hostel"]
+  ],
+  Things: [
+    ["Pen","Pencil"],["Sofa","Bed"],["Watch","Clock"],["Phone","Tablet"],["Umbrella","Raincoat"],
+    ["Spoon","Fork"],["Mirror","Window"],["Bicycle","Scooter"],["Guitar","Violin"],["Laptop","Desktop"]
+  ],
+  Life: [
+    ["Cricket","Baseball"],["Chess","Carrom"],["Movie","Series"],["Camping","Trekking"],["Sunrise","Sunset"],
+    ["Rain","Snow"],["Birthday","Wedding"],["Diwali","Christmas"],["Singing","Humming"],["Coding","Designing"]
+  ]
+};
+const CATS = ["Mixed", ...Object.keys(PAIRS)];
+const COLORS = ["var(--c1)","var(--c2)","var(--c3)","var(--c4)","var(--c5)","var(--c6)","var(--c7)","var(--c8)"];
+const MIN_N = 3, MAX_N = 8, DEFAULT_N = 4;
+
+const S = { screen: "setup", n: DEFAULT_N, names: Array(MAX_N).fill(""), cat: "Mixed", used: new Set() };
+let G = null;
+
+const esc = s => s.replace(/[&<>"']/g, c => ({ "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;" }[c]));
+const nm = i => (S.names[i].trim() || `Player ${i+1}`);
+const rnd = n => Math.floor(Math.random() * n);
+const pc = i => `style="--pc:${COLORS[i]}"`;
+
+function pickPair() {
+  const pool = (S.cat === "Mixed" ? Object.values(PAIRS).flat() : PAIRS[S.cat]);
+  let fresh = pool.filter(p => !S.used.has(p.join("|")));
+  if (!fresh.length) { pool.forEach(p => S.used.delete(p.join("|"))); fresh = pool; }
+  const p = fresh[rnd(fresh.length)];
+  S.used.add(p.join("|"));
+  return rnd(2) ? [p[0], p[1]] : [p[1], p[0]];
+}
+
+function newGame() {
+  const [civ, imp] = pickPair();
+  const n = S.n;
+  G = { civ, imp, imposter: rnd(n), dealIdx: 0, revealed: false, starter: rnd(n), accused: null };
+  S.screen = "deal";
+}
+const wordOf = i => (i === G.imposter ? G.imp : G.civ);
+const players = () => Array.from({ length: S.n }, (_, i) => i);
+
+const screens = {
+  setup() {
+    return `
+      <div>
+        <h1 tabindex="-1">Odd Word Out</h1>
+        <p class="muted" style="margin-top:12px">One phone, passed around. Everyone gets a word, but one person's word is slightly different, and they don't know it. Find them.</p>
+      </div>
+      <div>
+        <div class="label">Number of players</div>
+        <div class="chips">
+          ${Array.from({length: MAX_N - MIN_N + 1}, (_, k) => MIN_N + k).map(c => `<button class="chip" data-a="n" data-v="${c}" aria-pressed="${S.n === c}">${c}</button>`).join("")}
+        </div>
+      </div>
+      <div>
+        <div class="label">Players</div>
+        <div class="names">
+          ${players().map(i => `
+            <div class="name-row" ${pc(i)}>
+              <span class="dot"></span>
+              <input type="text" data-i="${i}" value="${esc(S.names[i])}" placeholder="Player ${i+1}" maxlength="14" aria-label="Player ${i+1} name" autocomplete="off">
+            </div>`).join("")}
+        </div>
+      </div>
+      <div>
+        <div class="label">Word type</div>
+        <div class="chips">
+          ${CATS.map(c => `<button class="chip" data-a="cat" data-v="${c}" aria-pressed="${S.cat === c}">${c}</button>`).join("")}
+        </div>
+      </div>
+      <div class="grow"></div>
+      <button class="btn" data-a="deal">Deal the words</button>`;
+  },
+
+  deal() {
+    const i = G.dealIdx;
+    const progress = `<div class="progress" aria-hidden="true">${players().map(k => `<span class="${k < i || (k === i && G.revealed) ? "done" : ""}"></span>`).join("")}</div>`;
+    if (!G.revealed) {
+      return `
+        ${progress}
+        <p class="muted">Pass the phone to <b style="color:var(--ink)">${esc(nm(i))}</b>. Nobody else looks.</p>
+        <button class="pcard" ${pc(i)} data-a="reveal" aria-label="Show word for ${esc(nm(i))}">
+          <span class="who">${esc(nm(i))}</span>
+          <span class="hint">Tap to see your word</span>
+        </button>
+        <div class="grow"></div>`;
+    }
+    const last = i === S.n - 1;
+    return `
+      ${progress}
+      <p class="muted">Remember it, then hide it.</p>
+      <div class="pcard flip" ${pc(i)}>
+        <span class="hint">${esc(nm(i))}, your word is</span>
+        <span class="word">${esc(wordOf(i))}</span>
+        <span class="hint">Don't say it out loud.</span>
+      </div>
+      <div class="grow"></div>
+      <button class="btn" data-a="next">${last ? "Hide word and start" : "Hide word and pass on"}</button>`;
+  },
+
+  discuss() {
+    const order = players().map(k => (G.starter + k) % S.n);
+    return `
+      <div>
+        <h2 tabindex="-1">Everyone has a word</h2>
+        <p class="muted" style="margin-top:10px">One of you holds a different word. It's close to the others, so it can be hard to tell.</p>
+      </div>
+      <div>
+        <div class="label">Speaking order</div>
+        <ol class="order">
+          ${order.map(i => `<li ${pc(i)}><span class="dot"></span>${esc(nm(i))}</li>`).join("")}
+        </ol>
+      </div>
+      <ul class="rules">
+        <li>Take turns giving one clue about your word.</li>
+        <li>Never say the word itself.</li>
+        <li>Go around twice, then vote.</li>
+        <li>Not sure if yours matches? Give a clue that could fit both.</li>
+      </ul>
+      <div class="grow"></div>
+      <button class="btn" data-a="vote">Time to vote</button>`;
+  },
+
+  vote() {
+    return `
+      <div>
+        <h2 tabindex="-1">Who's the odd one out?</h2>
+        <p class="muted" style="margin-top:10px">Agree as a group, then tap that person.</p>
+      </div>
+      <div class="picks">
+        ${players().map(i => `<button class="pick" ${pc(i)} data-a="accuse" data-v="${i}">${esc(nm(i))}</button>`).join("")}
+      </div>
+      <div class="grow"></div>
+      <button class="btn ghost" data-a="back-discuss">Back to clues</button>`;
+  },
+
+  result() {
+    const caught = G.accused === G.imposter;
+    const msg = caught
+      ? `<b>${esc(nm(G.accused))}</b> was the odd one out. The group wins.`
+      : `<b>${esc(nm(G.accused))}</b> was one of the group. <b>${esc(nm(G.imposter))}</b> was the odd one out and got away with it.`;
+    return `
+      <div>
+        <h2 tabindex="-1">${caught ? "Caught!" : "Fooled you"}</h2>
+      </div>
+      <div class="banner">${msg}<p class="muted" style="margin-top:10px">The group's word was <b style="color:var(--ink)">${esc(G.civ)}</b>. The odd word was <b style="color:var(--ink)">${esc(G.imp)}</b>.</p></div>
+      <div class="reveal">
+        ${players().map(i => `
+          <div class="rrow ${i === G.imposter ? "odd" : ""}" ${pc(i)}>
+            <span>${esc(nm(i))}${i === G.imposter ? '<span class="tag">odd one</span>' : ""}</span>
+            <span class="w">${esc(wordOf(i))}</span>
+          </div>`).join("")}
+      </div>
+      <div class="grow"></div>
+      <div class="stack">
+        <button class="btn" data-a="again">Play another round</button>
+        <button class="btn ghost" data-a="setup">Change players or word type</button>
+      </div>`;
+  }
+};
+
+const actions = {
+  cat: v => { S.cat = v; },
+  n: v => { S.n = +v; },
+  deal: () => newGame(),
+  reveal: () => { G.revealed = true; },
+  next: () => {
+    G.dealIdx++; G.revealed = false;
+    if (G.dealIdx >= S.n) S.screen = "discuss";
+  },
+  vote: () => { S.screen = "vote"; },
+  "back-discuss": () => { S.screen = "discuss"; },
+  accuse: v => { G.accused = +v; S.screen = "result"; },
+  again: () => newGame(),
+  setup: () => { S.screen = "setup"; }
+};
+
+function render() {
+  const app = document.getElementById("app");
+  app.innerHTML = screens[S.screen]();
+  window.scrollTo(0, 0);
+  if (S.screen !== "setup") {
+    const h = app.querySelector("h2");
+    if (h) h.focus({ preventScroll: true });
+  }
+}
+
+document.addEventListener("click", e => {
+  const el = e.target.closest("[data-a]");
+  if (!el) return;
+  const fn = actions[el.dataset.a];
+  if (fn) { fn(el.dataset.v); render(); }
+});
+document.addEventListener("input", e => {
+  const i = e.target.dataset && e.target.dataset.i;
+  if (i !== undefined) S.names[+i] = e.target.value;
+});
+
+render();
+</script>
+</body>
+</html>
