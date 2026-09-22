@@ -94,15 +94,36 @@
     min-height: 320px; display: flex; flex-direction: column; justify-content: space-between;
   }
   div.pcard { cursor: default; }
-  .pcard .who { font-size: clamp(2.2rem, 11vw, 3rem); font-weight: 800; line-height: 1; letter-spacing: -0.02em; overflow-wrap: anywhere; }
-  .pcard .hint { font-weight: 600; font-size: 1.05rem; }
-  .pcard .word {
+  .flipzone { perspective: 1400px; }
+  .flipcard {
+    position: relative; min-height: 320px; border-radius: 32px;
+    transform-style: preserve-3d; transition: transform .45s cubic-bezier(.22,.85,.3,1);
+    cursor: pointer; -webkit-user-select: none; user-select: none;
+    -webkit-touch-callout: none; touch-action: none;
+  }
+  .flipzone.peek .flipcard { transform: rotateY(180deg); }
+  .face {
+    position: absolute; inset: 0; backface-visibility: hidden; -webkit-backface-visibility: hidden;
+    border-radius: 32px; padding: 28px 26px; background: var(--pc); color: var(--card-ink);
+    display: flex; flex-direction: column; justify-content: space-between;
+  }
+  .face.back { transform: rotateY(180deg); }
+  .face .who { font-size: clamp(2.2rem, 11vw, 3rem); font-weight: 800; line-height: 1; letter-spacing: -0.02em; overflow-wrap: anywhere; }
+  .face .hint { font-weight: 600; font-size: 1.05rem; }
+  .face .hint.imp {
+    font-weight: 800; padding: 10px 14px; border-radius: 14px;
+    background: rgba(29,26,58,.14); color: var(--card-ink);
+  }
+  .face .who { display: flex; align-items: center; flex-wrap: wrap; gap: 10px; }
+  .imp-badge {
+    font-size: .75rem; font-weight: 800; letter-spacing: .03em; padding: 5px 12px;
+    border-radius: 999px; background: var(--card-ink); color: var(--pc); white-space: nowrap;
+  }
+  .face .word-reveal {
     font-size: clamp(2.8rem, 15vw, 4.4rem); font-weight: 800; line-height: 1;
     letter-spacing: -0.03em; overflow-wrap: anywhere;
   }
-  .pcard.flip { animation: flip .32s ease-out; }
-  @keyframes flip { from { transform: rotateY(88deg); } to { transform: none; } }
-  @media (prefers-reduced-motion: reduce) { .pcard.flip { animation: none; } .btn:active { transform: none; } }
+  @media (prefers-reduced-motion: reduce) { .flipcard { transition: none; } .btn:active { transform: none; } }
 
   /* discuss / vote / result */
   ol.order { list-style: none; margin: 0; padding: 0; display: grid; gap: 10px; }
@@ -176,7 +197,7 @@ function pickPair() {
 function newGame() {
   const [civ, imp] = pickPair();
   const n = S.n;
-  G = { civ, imp, imposter: rnd(n), dealIdx: 0, revealed: false, starter: rnd(n), accused: null };
+  G = { civ, imp, imposter: rnd(n), dealIdx: 0, revealedOnce: false, starter: rnd(n), accused: null };
   S.screen = "deal";
 }
 const wordOf = i => (i === G.imposter ? G.imp : G.civ);
@@ -186,7 +207,7 @@ const screens = {
   setup() {
     return `
       <div>
-        <h1 tabindex="-1"></h1>
+        <h1 tabindex="-1">Find the Imposter</h1>
         <p class="muted" style="margin-top:12px">One phone, passed around. Everyone gets a word, but one person's word is slightly different, and they don't know it. Find them.</p>
       </div>
       <div>
@@ -217,28 +238,28 @@ const screens = {
 
   deal() {
     const i = G.dealIdx;
-    const progress = `<div class="progress" aria-hidden="true">${players().map(k => `<span class="${k < i || (k === i && G.revealed) ? "done" : ""}"></span>`).join("")}</div>`;
-    if (!G.revealed) {
-      return `
-        ${progress}
-        <p class="muted">Pass the phone to <b style="color:var(--ink)">${esc(nm(i))}</b>. Nobody else looks.</p>
-        <button class="pcard" ${pc(i)} data-a="reveal" aria-label="Show word for ${esc(nm(i))}">
-          <span class="who">${esc(nm(i))}</span>
-          <span class="hint">Tap to see your word</span>
-        </button>
-        <div class="grow"></div>`;
-    }
     const last = i === S.n - 1;
+    const progress = `<div class="progress" aria-hidden="true">${players().map(k => `<span class="${k < i || (k === i && G.revealedOnce) ? "done" : ""}"></span>`).join("")}</div>`;
     return `
       ${progress}
-      <p class="muted">Remember it, then hide it.</p>
-      <div class="pcard flip" ${pc(i)}>
-        <span class="hint">${esc(nm(i))}, your word is</span>
-        <span class="word">${esc(wordOf(i))}</span>
-        <span class="hint">Don't say it out loud.</span>
+      <p class="muted">Pass the phone to <b style="color:var(--ink)">${esc(nm(i))}</b>. Nobody else looks.</p>
+      <div class="flipzone" ${pc(i)} data-hold="${i}" role="button" tabindex="0" aria-label="Press and hold to flip the card and reveal the imposter and word">
+        <div class="flipcard">
+          <div class="face front">
+            <span class="who">${esc(nm(i))}</span>
+            <span class="hint">Press and hold to flip the card and reveal if you're the imposter and your word</span>
+          </div>
+          <div class="face back">
+            <span class="who">${esc(nm(i))}${i === G.imposter ? '<span class="tag imp-badge">IMPOSTER</span>' : ""}</span>
+            <span class="word-reveal">${esc(wordOf(i))}</span>
+            ${i === G.imposter
+              ? `<span class="hint imp">You're the odd one out. Blend in, don't get caught!</span>`
+              : `<span class="hint">Don't say it out loud.</span>`}
+          </div>
+        </div>
       </div>
       <div class="grow"></div>
-      <button class="btn" data-a="next">${last ? "Hide word and start" : "Hide word and pass on"}</button>`;
+      <button class="btn" data-a="next" ${G.revealedOnce ? "" : "disabled"}>${last ? "Start the round" : "Pass to next player"}</button>`;
   },
 
   discuss() {
@@ -306,9 +327,8 @@ const actions = {
   cat: v => { S.cat = v; },
   n: v => { S.n = +v; },
   deal: () => newGame(),
-  reveal: () => { G.revealed = true; },
   next: () => {
-    G.dealIdx++; G.revealed = false;
+    G.dealIdx++; G.revealedOnce = false;
     if (G.dealIdx >= S.n) S.screen = "discuss";
   },
   vote: () => { S.screen = "vote"; },
@@ -318,6 +338,29 @@ const actions = {
   setup: () => { S.screen = "setup"; }
 };
 
+function wireHoldCard() {
+  const card = document.querySelector(".flipzone[data-hold]");
+  if (!card) return;
+  const idx = +card.dataset.hold;
+  const show = e => { e.preventDefault(); card.classList.add("peek"); };
+  const hide = () => {
+    if (!card.classList.contains("peek")) return;
+    card.classList.remove("peek");
+    if (G && G.dealIdx === idx && !G.revealedOnce) { G.revealedOnce = true; render(); }
+  };
+  card.addEventListener("pointerdown", show);
+  card.addEventListener("pointerup", hide);
+  card.addEventListener("pointercancel", hide);
+  card.addEventListener("pointerleave", hide);
+  card.addEventListener("contextmenu", e => e.preventDefault());
+  card.addEventListener("keydown", e => {
+    if ((e.key === "Enter" || e.key === " ") && !card.classList.contains("peek")) show(e);
+  });
+  card.addEventListener("keyup", e => {
+    if (e.key === "Enter" || e.key === " ") hide();
+  });
+}
+
 function render() {
   const app = document.getElementById("app");
   app.innerHTML = screens[S.screen]();
@@ -326,6 +369,7 @@ function render() {
     const h = app.querySelector("h2");
     if (h) h.focus({ preventScroll: true });
   }
+  if (S.screen === "deal") wireHoldCard();
 }
 
 document.addEventListener("click", e => {
